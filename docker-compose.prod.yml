@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: shophome_prod_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-shophome_db}
+      POSTGRES_USER: ${POSTGRES_USER:-shophome_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-StrongSecurePass2026!}
+    # Bảo mật: Không public port 5432 ra internet ở Production
+    expose:
+      - "5432"
+    volumes:
+      - shophome_prod_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shophome_user} -d ${POSTGRES_DB:-shophome_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shophome-prod-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shophome_prod_backend
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-shophome_db};Username=${POSTGRES_USER:-shophome_user};Password=${POSTGRES_PASSWORD:-StrongSecurePass2026!}"
+      Jwt__Key: "${JWT_SECRET:-ShopHomeSuperSecureSecretKeyProduction20261119!@#$%^&*()_+}"
+      Jwt__Issuer: "shophome-backend"
+      Jwt__Audience: "shophome-client"
+      Sepay__ApiKey: "${SEPAY_API_KEY:-}"
+      Sepay__BankName: "${SEPAY_BANK_NAME:-MB}"
+      Sepay__AccountNumber: "${SEPAY_ACCOUNT_NUMBER:-0901234567}"
+      Sepay__AccountName: "${SEPAY_ACCOUNT_NAME:-SHOPHOME VIETNAM}"
+    ports:
+      - "127.0.0.1:5002:8080"
+    volumes:
+      - shophome_prod_uploads:/app/wwwroot/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - shophome-prod-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${DOMAIN_URL:-https://shophome.vn}
+    container_name: shophome_prod_frontend
+    restart: always
+    environment:
+      INTERNAL_API_URL: http://backend:8080
+      NEXT_PUBLIC_API_URL: ${DOMAIN_URL:-https://shophome.vn}
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - shophome-prod-net
+
+volumes:
+  shophome_prod_pg_data:
+  shophome_prod_uploads:
+
+networks:
+  shophome-prod-net:
+    driver: bridge

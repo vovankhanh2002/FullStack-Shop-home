@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: shophome_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: shophome_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - shophome_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d shophome_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shophome-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shophome_backend
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=shophome_db;Username=postgres;Password=postgres"
+      Jwt__Key: "ShopHomeSuperSecureSecretKey20261118!@#$%^&*()_+"
+      Jwt__Issuer: "shophome-backend"
+      Jwt__Audience: "shophome-client"
+    ports:
+      - "5002:8080"
+    volumes:
+      - shophome_uploads:/app/wwwroot/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - shophome-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5002
+    container_name: shophome_frontend
+    restart: always
+    environment:
+      INTERNAL_API_URL: http://backend:8080
+      NEXT_PUBLIC_API_URL: http://localhost:5002
+    ports:
+      - "3002:3000"
+    depends_on:
+      - backend
+    networks:
+      - shophome-net
+
+volumes:
+  shophome_pg_data:
+  shophome_uploads:
+
+networks:
+  shophome-net:
+    driver: bridge
