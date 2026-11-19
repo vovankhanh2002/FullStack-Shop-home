@@ -4,15 +4,15 @@ services:
     container_name: shophome_prod_postgres
     restart: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-shophome_db}
-      POSTGRES_USER: ${POSTGRES_USER:-shophome_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-StrongSecurePass2026!}
+      POSTGRES_DB: 
+      POSTGRES_USER: 
+      POSTGRES_PASSWORD: 
     expose:
       - "5432"
     volumes:
       - shophome_prod_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shophome_user} -d ${POSTGRES_DB:-shophome_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${} -d ${}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,14 +27,14 @@ services:
     restart: always
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-shophome_db};Username=${POSTGRES_USER:-shophome_user};Password=${POSTGRES_PASSWORD:-StrongSecurePass2026!}"
-      Jwt__Key: "${JWT_SECRET:-ShopHomeSuperSecureSecretKeyProduction20261119!@#$%^&*()_+}"
-      Jwt__Issuer: "shophome-backend"
-      Jwt__Audience: "shophome-client"
-      Sepay__ApiKey: "${SEPAY_API_KEY:-}"
-      Sepay__BankName: "${SEPAY_BANK_NAME:-MB}"
-      Sepay__AccountNumber: "${SEPAY_ACCOUNT_NUMBER:-0901234567}"
-      Sepay__AccountName: "${SEPAY_ACCOUNT_NAME:-SHOPHOME VIETNAM}"
+      ConnectionStrings__DefaultConnection: ""
+      Jwt__Key: "${}"
+      Jwt__Issuer: ""
+      Jwt__Audience: ""
+      Sepay__ApiKey: "${}"
+      Sepay__BankName: "${}"
+      Sepay__AccountNumber: "${}"
+      Sepay__AccountName: "${}"
     ports:
       - "127.0.0.1:5002:8080"
     volumes:
